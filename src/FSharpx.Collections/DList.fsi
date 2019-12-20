@@ -40,6 +40,8 @@ type DList<'T> =
     ///O(log n). Returns option first element and tail.
     member TryUncons : ('T * DList<'T>) option
 
+    member GetEnumerator2 : unit -> System.Collections.Generic.IEnumerator<'T>
+
 [<RequireQualifiedAccess>]
 module DList =
     //pattern discriminators (active pattern)

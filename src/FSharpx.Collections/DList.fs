@@ -143,6 +143,9 @@ type DList<'T>(length : int , data : DListData<'T> ) =
                
         (walk [] data).GetEnumerator()
 
+    member this.GetEnumerator2() =
+        new Enumerator<'T>(data) :> IEnumerator<'T>
+
     interface IReadOnlyCollection<'T> with
         member this.Count = this.Length
         member this.GetEnumerator() = this.toSeq()
@@ -153,6 +156,44 @@ and
     | Nil
     | Unit of 'T
     | Join of DListData<'T> * DListData<'T>  
+
+and Enumerator<'T>(root : DListData<'T>) =
+    let mutable stateStack = [root]
+    let mutable currentValue = None
+
+    let getCurrent () =
+        match currentValue with
+        | Some x -> x
+        | None -> invalidOp "Call MoveNext before getting Current"
+
+    interface IEnumerator<'T> with
+        member __.MoveNext() =
+            let rec walk rights l =
+                match l with
+                | Nil ->
+                    match rights with
+                    | [] ->
+                        stateStack <- []
+                        false
+                    | t::ts -> walk ts t
+                | Unit x ->
+                    stateStack <- rights
+                    currentValue <- Some x
+                    true
+                | Join(x, y) -> walk (y::rights) x
+
+            match stateStack with
+            | [] -> false
+            | l::rights -> walk rights l
+
+        member __.Current = getCurrent()
+        member __.Current = getCurrent() |> box
+
+        member __.Reset() =
+            stateStack <- [root]
+            currentValue <- None
+
+        member __.Dispose() = ()
 
 [<RequireQualifiedAccess>]
 module DList =
